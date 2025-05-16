@@ -5,6 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
 import { exportToExcel } from "@/lib/excelProcessor";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Contact {
   CID: string | number;
@@ -16,6 +24,7 @@ interface Contact {
 
 interface DataPreviewSectionProps {
   contacts: Contact[];
+  originalContacts: Contact[];
   stats: {
     totalProcessed: number;
     duplicatesRemoved: number;
@@ -23,7 +32,7 @@ interface DataPreviewSectionProps {
   };
 }
 
-const DataPreviewSection = ({ contacts, stats }: DataPreviewSectionProps) => {
+const DataPreviewSection = ({ contacts, originalContacts, stats }: DataPreviewSectionProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
@@ -37,7 +46,7 @@ const DataPreviewSection = ({ contacts, stats }: DataPreviewSectionProps) => {
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      await exportToExcel(contacts);
+      await exportToExcel(contacts, originalContacts);
       toast({
         title: "Success",
         description: "File downloaded successfully!",
@@ -92,38 +101,36 @@ const DataPreviewSection = ({ contacts, stats }: DataPreviewSectionProps) => {
         </CardHeader>
         <CardContent>
           <div className="relative overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-muted">
-                <tr>
-                  <th className="px-4 py-3">CID</th>
-                  <th className="px-4 py-3">AID</th>
-                  <th className="px-4 py-3">Customer Name</th>
-                  <th className="px-4 py-3">Phone</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>CID</TableHead>
+                  <TableHead>AID</TableHead>
+                  <TableHead>Customer Name</TableHead>
+                  <TableHead>Phone</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {currentContacts.map((contact, index) => (
-                  <tr 
+                  <TableRow 
                     key={index} 
-                    className={`border-b ${
-                      contact.Phone === "" ? "bg-destructive/10" : ""
-                    }`}
+                    className={contact.Phone === "" ? "bg-destructive/10" : ""}
                   >
-                    <td className="px-4 py-3">{contact.CID}</td>
-                    <td className="px-4 py-3">{contact.AID}</td>
-                    <td className="px-4 py-3">{contact.Name}</td>
-                    <td className="px-4 py-3 font-mono">{contact.Phone}</td>
-                  </tr>
+                    <TableCell>{contact.CID}</TableCell>
+                    <TableCell>{contact.AID}</TableCell>
+                    <TableCell>{contact.Name}</TableCell>
+                    <TableCell className="font-mono">{contact.Phone}</TableCell>
+                  </TableRow>
                 ))}
                 {currentContacts.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-3 text-center">
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">
                       No data available
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {totalPages > 1 && (

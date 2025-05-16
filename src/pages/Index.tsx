@@ -65,7 +65,8 @@ const Index = () => {
         
         {contacts.length > 0 && (
           <DataPreviewSection 
-            contacts={contacts} 
+            contacts={contacts}
+            originalContacts={originalContacts}
             stats={stats} 
           />
         )}

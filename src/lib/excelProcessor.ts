@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 
 interface Contact {
@@ -28,6 +27,9 @@ const cleanPhoneNumber = (phone: string): string => {
     .map(p => p.trim())
     .filter(p => p.length > 0);
   
+  // Set to keep track of unique cleaned numbers
+  const uniqueNumbers = new Set<string>();
+  
   const cleanedNumbers = phoneNumbers.map(number => {
     // Remove all non-numeric characters
     let cleanedNumber = number.replace(/\D/g, '');
@@ -48,11 +50,14 @@ const cleanPhoneNumber = (phone: string): string => {
     // Check if the number has a valid length after cleaning
     const isValidLength = cleanedNumber.length >= 7 && cleanedNumber.length <= 11;
     
-    return isValidLength ? cleanedNumber + ';' : '';
+    return isValidLength ? cleanedNumber : '';
   }).filter(n => n.length > 0); // Remove any empty strings
   
-  // Join all valid numbers with a space
-  return cleanedNumbers.join(' ');
+  // Remove duplicates within the same contact
+  cleanedNumbers.forEach(num => uniqueNumbers.add(num));
+  
+  // Convert set back to array, add semicolons, and join with spaces
+  return Array.from(uniqueNumbers).map(num => num + ';').join(' ');
 };
 
 // Remove duplicates based on cleaned phone numbers
@@ -151,28 +156,37 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
 };
 
 // Export cleaned data to Excel file
-export const exportToExcel = async (contacts: Contact[]): Promise<void> => {
+export const exportToExcel = async (cleanedContacts: Contact[], originalContacts: Contact[]): Promise<void> => {
   try {
     // Create a new workbook
     const workbook = XLSX.utils.book_new();
     
-    // Create worksheets for original and cleaned data
-    const originalContacts = contacts.map(contact => {
-      // Extract the original data without modifications
+    // Rename "Name" column to "Customer Name" in original data
+    const renamedOriginalContacts = originalContacts.map(contact => {
       return {
         CID: contact.CID,
         AID: contact.AID,
-        Name: contact.Name,
+        "Customer Name": contact.Name,
         Phone: contact.Phone
       };
     });
     
     // Create the original data worksheet
-    const originalWorksheet = XLSX.utils.json_to_sheet(originalContacts);
+    const originalWorksheet = XLSX.utils.json_to_sheet(renamedOriginalContacts);
     XLSX.utils.book_append_sheet(workbook, originalWorksheet, 'Original Data');
     
+    // Prepare cleaned data with renamed "Name" column
+    const processedContacts = cleanedContacts.map(contact => {
+      return {
+        CID: contact.CID,
+        AID: contact.AID,
+        "Customer Name": contact.Name,
+        Phone: contact.Phone
+      };
+    });
+    
     // Create the cleaned data worksheet
-    const cleanedWorksheet = XLSX.utils.json_to_sheet(contacts);
+    const cleanedWorksheet = XLSX.utils.json_to_sheet(processedContacts);
     XLSX.utils.book_append_sheet(workbook, cleanedWorksheet, 'Cleaned Data');
     
     // Generate file name with timestamp
