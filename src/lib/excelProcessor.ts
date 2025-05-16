@@ -23,35 +23,36 @@ interface ProcessingResult {
 const cleanPhoneNumber = (phone: string): string => {
   if (!phone || typeof phone !== 'string') return '';
 
-  // Handle multiple phone numbers by taking the first one
-  const firstPhone = phone.split(',')[0];
+  // Split by multiple possible delimiters (comma, slash)
+  const phoneNumbers = phone.split(/[,\/]/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
   
-  // Remove all non-numeric characters
-  let cleanedNumber = firstPhone.replace(/\D/g, '');
+  const cleanedNumbers = phoneNumbers.map(number => {
+    // Remove all non-numeric characters
+    let cleanedNumber = number.replace(/\D/g, '');
+    
+    // Remove country codes (assuming they start with + or 00)
+    if (cleanedNumber.startsWith('00')) {
+      cleanedNumber = cleanedNumber.substring(2);
+    }
+    if (cleanedNumber.length > 8 && cleanedNumber.startsWith('855')) {
+      cleanedNumber = cleanedNumber.substring(3);
+    }
+    
+    // If the first digit is not 0, add it (for local format)
+    if (cleanedNumber.length > 0 && !cleanedNumber.startsWith('0')) {
+      cleanedNumber = '0' + cleanedNumber;
+    }
+    
+    // Check if the number has a valid length after cleaning
+    const isValidLength = cleanedNumber.length >= 7 && cleanedNumber.length <= 11;
+    
+    return isValidLength ? cleanedNumber + ';' : '';
+  }).filter(n => n.length > 0); // Remove any empty strings
   
-  // Remove country codes (assuming they start with + or 00)
-  if (cleanedNumber.startsWith('00')) {
-    cleanedNumber = cleanedNumber.substring(2);
-  }
-  if (cleanedNumber.length > 8 && cleanedNumber.startsWith('855')) {
-    cleanedNumber = cleanedNumber.substring(3);
-  }
-  
-  // If the first digit is not 0, add it (for local format)
-  if (cleanedNumber.length > 0 && !cleanedNumber.startsWith('0')) {
-    cleanedNumber = '0' + cleanedNumber;
-  }
-  
-  // Check if the number has a valid length after cleaning
-  // For this example, we'll consider 7-11 digits as valid
-  const isValidLength = cleanedNumber.length >= 7 && cleanedNumber.length <= 11;
-  
-  if (!isValidLength) {
-    return '';
-  }
-  
-  // Format as just the cleaned number with a semicolon
-  return `${cleanedNumber};`;
+  // Join all valid numbers with a space
+  return cleanedNumbers.join(' ');
 };
 
 // Remove duplicates based on cleaned phone numbers
@@ -93,7 +94,7 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
         const jsonData = XLSX.utils.sheet_to_json<Contact>(worksheet);
         
         // Save a copy of the original data before cleaning
-        const originalData = [...jsonData];
+        const originalData = JSON.parse(JSON.stringify(jsonData));
         
         // Validate required columns
         if (jsonData.length > 0) {
