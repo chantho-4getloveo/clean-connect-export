@@ -4,12 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import FileUploadSection from "@/components/FileUploadSection";
 import DataPreviewSection from "@/components/DataPreviewSection";
 import ThemeToggle from "@/components/ThemeToggle";
-import { processExcelFile } from "@/lib/excelProcessor";
+import { processExcelFile, resetGlobalUniquePhones } from "@/lib/excelProcessor";
 
 interface Contact {
   CID: string | number;
   AID: string | number;
-  Name: string;
+  Name?: string;
+  "Customer Name"?: string;
   Phone: string;
   cleanedPhone?: string;
 }
@@ -30,6 +31,9 @@ const Index = () => {
     
     try {
       setIsProcessing(true);
+      
+      // Reset the global unique phones set before processing
+      resetGlobalUniquePhones();
       
       const { cleanedData, originalData, statistics } = await processExcelFile(file);
       
