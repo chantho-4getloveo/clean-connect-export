@@ -11,6 +11,7 @@ interface Contact {
 
 interface ProcessingResult {
   cleanedData: Contact[];
+  originalData: Contact[];
   statistics: {
     totalProcessed: number;
     duplicatesRemoved: number;
@@ -49,8 +50,8 @@ const cleanPhoneNumber = (phone: string): string => {
     return '';
   }
   
-  // Format as :0xxxxxxxx;
-  return `:${cleanedNumber};`;
+  // Format as just the cleaned number with a semicolon
+  return `${cleanedNumber};`;
 };
 
 // Remove duplicates based on cleaned phone numbers
@@ -91,6 +92,9 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
         // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json<Contact>(worksheet);
         
+        // Save a copy of the original data before cleaning
+        const originalData = [...jsonData];
+        
         // Validate required columns
         if (jsonData.length > 0) {
           const firstRow = jsonData[0];
@@ -123,6 +127,7 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
         
         resolve({
           cleanedData: uniqueContacts,
+          originalData: originalData,
           statistics: {
             totalProcessed: originalCount,
             duplicatesRemoved,
@@ -147,12 +152,27 @@ export const processExcelFile = async (file: File): Promise<ProcessingResult> =>
 // Export cleaned data to Excel file
 export const exportToExcel = async (contacts: Contact[]): Promise<void> => {
   try {
-    // Create worksheet
-    const worksheet = XLSX.utils.json_to_sheet(contacts);
-    
-    // Create workbook
+    // Create a new workbook
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Cleaned Contacts');
+    
+    // Create worksheets for original and cleaned data
+    const originalContacts = contacts.map(contact => {
+      // Extract the original data without modifications
+      return {
+        CID: contact.CID,
+        AID: contact.AID,
+        Name: contact.Name,
+        Phone: contact.Phone
+      };
+    });
+    
+    // Create the original data worksheet
+    const originalWorksheet = XLSX.utils.json_to_sheet(originalContacts);
+    XLSX.utils.book_append_sheet(workbook, originalWorksheet, 'Original Data');
+    
+    // Create the cleaned data worksheet
+    const cleanedWorksheet = XLSX.utils.json_to_sheet(contacts);
+    XLSX.utils.book_append_sheet(workbook, cleanedWorksheet, 'Cleaned Data');
     
     // Generate file name with timestamp
     const now = new Date();

@@ -97,7 +97,7 @@ const DataPreviewSection = ({ contacts, stats }: DataPreviewSectionProps) => {
                 <tr>
                   <th className="px-4 py-3">CID</th>
                   <th className="px-4 py-3">AID</th>
-                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Customer Name</th>
                   <th className="px-4 py-3">Phone</th>
                 </tr>
               </thead>

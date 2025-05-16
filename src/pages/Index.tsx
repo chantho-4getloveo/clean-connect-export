@@ -16,6 +16,7 @@ interface Contact {
 
 const Index = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [originalContacts, setOriginalContacts] = useState<Contact[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [stats, setStats] = useState({
     totalProcessed: 0,
@@ -30,9 +31,10 @@ const Index = () => {
     try {
       setIsProcessing(true);
       
-      const { cleanedData, statistics } = await processExcelFile(file);
+      const { cleanedData, originalData, statistics } = await processExcelFile(file);
       
       setContacts(cleanedData);
+      setOriginalContacts(originalData);
       setStats(statistics);
       
       toast({
